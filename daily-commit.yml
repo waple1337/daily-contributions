@@ -1,0 +1,38 @@
+name: Daily Commit
+
+on:
+  schedule:
+    # Запускается 3 раза в день: утро, полдень, вечер
+    - cron: '0 0 * * *'   # 00:00 UTC (утро)
+    - cron: '0 12 * * *'  # 12:00 UTC (полдень)
+    - cron: '0 18 * * *'  # 18:00 UTC (вечер)
+  workflow_dispatch: # Позволяет запускать вручную
+
+jobs:
+  commit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Generate daily data
+        run: |
+          python generate_daily.py
+      
+      - name: Commit changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add daily-log.json
+          TIME=$(date +'%H:%M')
+          git diff --staged --quiet || git commit -m "Daily update: $(date +'%Y-%m-%d') at $TIME UTC"
+          git push
+
